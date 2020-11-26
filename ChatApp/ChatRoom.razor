@@ -84,23 +84,27 @@
 
     public async Task ReceiveMessages()
     {
-        string messagesAsString = JsonConvert.SerializeObject(this._messages);
+        try
+        {
+            string messagesAsString = JsonConvert.SerializeObject(this._messages);
 
-        await this._hubConnection.SendAsync("ReceiveMessages", messagesAsString, _userId);
+            await this._hubConnection.SendAsync("ReceiveMessages", messagesAsString, _userId);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+        }
+
     }
 
     public async Task Chat()
     {
         try
         {
-            // Start chatting and force refresh UI.
-            _isChatting = true;
-            await Task.Delay(1);
+            this._isChatting = true;
+            this._username = authenticationStateTask.Result.User.Identity.Name;
+            this._messages.Clear();
 
-            // remove old messages if any
-            _messages.Clear();
-
-            // Create the chat client
             string baseUrl = navigationManager.BaseUri;
 
             _hubUrl = baseUrl.TrimEnd('/') + ChatApp.Hubs.ChatHub.HubUrl;
@@ -119,9 +123,7 @@
 
             await _hubConnection.StartAsync();
 
-            var name = authenticationStateTask.Result.User.Identity.Name;
-
-            await _hubConnection.SendAsync("Connect", name);
+            await _hubConnection.SendAsync("Connect", _username);
         }
         catch (Exception e)
         {
@@ -143,23 +145,30 @@
         StateHasChanged();
     }
 
-    private void SyncData(string test)
+    private void SyncData(string sync)
     {
         _hubConnection.SendAsync("SyncData", _userId);
     }
 
-    private void Connect(string name, string userId, string messagesAsString)
+    private async Task Connect(string name, string userId, string messagesAsString)
     {
-        var messages = JsonConvert.DeserializeObject<ICollection<MessageModel>>(messagesAsString);
-        _username = name;
-        _userId = userId;
-        if(messages != null && messages.Any())
-            _messages.AddRange(messages);
+        try
+        {
+            var messages = JsonConvert.DeserializeObject<ICollection<MessageModel>>(messagesAsString);
+            _username = name;
+            _userId = userId;
+            if (messages != null && messages.Any())
+                _messages.AddRange(messages);
 
-        // Inform blazor the UI needs updating
-        StateHasChanged();
+            await SendAsync($"[Notice] {_username} joined chat room.");
 
-        SendAsync($"[Notice] {_username} joined chat room.").GetAwaiter();
+            StateHasChanged();
+        }
+        catch (Exception e)
+        {
+
+            Console.WriteLine(e.Message);
+        }
     }
 
     private void BroadcastMessage(string name, string message, string date, int state)

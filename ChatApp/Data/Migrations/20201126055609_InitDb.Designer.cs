@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
-namespace ChatApp.Migrations
+namespace ChatApp.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
     [Migration("20201126055609_InitDb")]

@@ -18,14 +18,68 @@ namespace ChatApp.Services
             this.applicationDbContext = applicationDbContext;
         }
 
+        private Task UpdateReceivers(ICollection<Receiver> receivers)
+        {
+            try
+            {
+                receivers.ToList().ForEach(x =>
+                {
+                    x.IsReceived = true;
+                    x.ReceivedDate = DateTime.Now;
+                });
+
+                this.applicationDbContext.SaveChanges();
+            }
+            catch (Exception e)
+            {
+
+                Console.WriteLine(e.Message);
+            }
+
+            return Task.CompletedTask;
+        }
+
+        private Task UpdateMessages(ICollection<Receiver> receivers)
+        {
+            try
+            {
+                var mesageStatesForUpdates = new HashSet<string>();
+                var updatedMessageIds = new HashSet<string>();
+
+                receivers.ToList().ForEach(x => mesageStatesForUpdates.Add(x.MessageId));
+
+                mesageStatesForUpdates.ToList().ForEach(x =>
+                {
+                    if (this.applicationDbContext.Receivers.Where(y => y.MessageId == x).ToList().All(y => y.IsReceived))
+                    {
+                        this.applicationDbContext.Messages.FirstOrDefault(y => y.Id == x).State = 1;
+                    }
+                });
+
+                this.applicationDbContext.SaveChanges();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+
+            return Task.CompletedTask;
+        }
+
         public Task<string> Register(string userName, string id)
         {
             string userId = this.applicationDbContext.Users.FirstOrDefault(x => x.UserName == userName).Id;
-
-            if (!connectedUsers.ContainsKey(id))
+            try
             {
-                (string dbId, string name) value = (userId, userName);
-                connectedUsers.Add(id, value);
+                if (!connectedUsers.ContainsKey(id) && !string.IsNullOrEmpty(userId))
+                {
+                    (string dbId, string name) value = (userId, userName);
+                    connectedUsers.Add(id, value);
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
             }
 
             return Task.FromResult(userId);
@@ -60,7 +114,7 @@ namespace ChatApp.Services
             return Task.FromResult<ICollection<MessageModel>>(result);
         }
 
-        public Task<(string userName, string date, int state)> AddMessageAsync(string connectionId, string text)
+        public async Task<(string userName, string date, int state)> AddMessageAsync(string connectionId, string text)
         {
             var userId = string.Empty;
             string userName = string.Empty;
@@ -77,7 +131,7 @@ namespace ChatApp.Services
             {
                 var receivers = new List<Receiver>();
                 string msgId = Guid.NewGuid().ToString();
-                
+
                 connectedUsers.ToList().ForEach(x =>
                 {
                     bool isReceived = userId == x.Value.dbId;
@@ -95,30 +149,30 @@ namespace ChatApp.Services
 
                 try
                 {
-                   this.applicationDbContext.Messages.Add(new Message()
+                    this.applicationDbContext.Messages.Add(new Message()
                     {
                         Id = msgId,
                         SendDate = sendDate,
                         Text = text,
                         State = state
-                   });
+                    });
 
                     this.applicationDbContext.Receivers.AddRange(receivers);
 
-                    this.applicationDbContext.SaveChanges();
+                    await this.applicationDbContext.SaveChangesAsync();
                 }
                 catch (Exception e)
                 {
                     Console.WriteLine(e.Message);
-                }                
+                }
             }
 
-            return Task.FromResult((userName, sendDate.ToString(), state));
+            return (userName, sendDate.ToString(), state);
         }
 
         public Task RemoveUser(string connectionId)
         {
-            if(connectedUsers.ContainsKey(connectionId))
+            if (connectedUsers.ContainsKey(connectionId))
             {
                 connectedUsers.Remove(connectionId);
             }
@@ -126,58 +180,48 @@ namespace ChatApp.Services
             return Task.CompletedTask;
         }
 
-        public Task ReceiveMessages(string connectionId, ICollection<MessageModel> notReceivedMsgs)
+        public async Task ReceiveMessages(string connectionId, ICollection<MessageModel> notReceivedMsgs)
         {
-            string userId = string.Empty;
-
-            if (connectedUsers.ContainsKey(connectionId))
+            try
             {
-                userId = connectedUsers[connectionId].dbId;
-            }
+                string userId = string.Empty;
 
-            if (!string.IsNullOrEmpty(userId))
-            {
-                var allunReceives = this.applicationDbContext.Receivers
-                    .Where(x => x.ReceiverId == userId && !x.IsReceived)
-                    .ToList();
-
-                allunReceives.ForEach(x =>
+                if (connectedUsers.ContainsKey(connectionId))
                 {
-                    x.IsReceived = true;
-                    x.ReceivedDate = DateTime.Now;
-                });
+                    userId = connectedUsers[connectionId].dbId;
+                }
 
-                this.applicationDbContext.SaveChanges();
-
-                var mesageStatesForUpdates = new HashSet<string>();
-                var updatedMessageIds = new HashSet<string>();
-
-                allunReceives.ForEach(x => mesageStatesForUpdates.Add(x.MessageId));
-
-                mesageStatesForUpdates.ToList().ForEach(x =>
+                if (!string.IsNullOrEmpty(userId))
                 {
-                    if(this.applicationDbContext.Receivers.Where(y => y.MessageId == x).ToList().All(y => y.IsReceived))
+                    var allReceivers = this.applicationDbContext.Receivers
+                        .Where(x => x.ReceiverId == userId && !x.IsReceived)
+                        .ToList();
+
+                    if (allReceivers.Any())
                     {
-                        this.applicationDbContext.Messages.FirstOrDefault(y => y.Id == x).State = 1;
+                        await this.UpdateReceivers(allReceivers);
+
+                        await this.UpdateMessages(allReceivers);
                     }
-                });
-
-                this.applicationDbContext.SaveChanges();
+                }
             }
+            catch (Exception e)
+            {
 
-            return Task.CompletedTask;
+                Console.WriteLine(e.Message);
+            }
         }
 
         public Task<string> GetUserIdByConnectionId(string connectionId)
         {
             string result = string.Empty;
 
-            if(connectedUsers.ContainsKey(connectionId))
+            if (connectedUsers.ContainsKey(connectionId))
             {
                 result = connectedUsers[connectionId].dbId;
             }
 
             return Task.FromResult(result);
-        }
+        }      
     }
 }

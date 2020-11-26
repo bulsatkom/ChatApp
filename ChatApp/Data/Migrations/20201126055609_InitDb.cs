@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace ChatApp.Migrations
+namespace ChatApp.Data.Migrations
 {
     public partial class InitDb : Migration
     {
