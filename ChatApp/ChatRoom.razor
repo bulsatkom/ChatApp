@@ -1,11 +1,9 @@
 ﻿@page "/chatroom"
-@using Microsoft.AspNetCore.Identity
-@using ChatApp.Data;
 @using Microsoft.AspNetCore.SignalR.Client;
-@using Microsoft.AspNetCore.Http.Connections.Client;
 @using ChatApp.Models;
 @using Newtonsoft.Json;
 @inject NavigationManager navigationManager
+
 <h1>Blazor SignalR Chat</h1>
 <hr />
 <AuthorizeView>

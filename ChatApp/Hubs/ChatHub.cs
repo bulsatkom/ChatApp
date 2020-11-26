@@ -1,7 +1,5 @@
-﻿using ChatApp.Data;
-using ChatApp.Models;
+﻿using ChatApp.Models;
 using ChatApp.Services.Interfaces;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json;
 using System;
@@ -11,7 +9,6 @@ using System.Threading.Tasks;
 
 namespace ChatApp.Hubs
 {
-    //[Authorize]
     public class ChatHub : Hub
     {
         public const string HubUrl = "/chat";
