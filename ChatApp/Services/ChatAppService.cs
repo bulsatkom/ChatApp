@@ -18,7 +18,7 @@ namespace ChatApp.Services
             this.applicationDbContext = applicationDbContext;
         }
 
-        private Task UpdateReceivers(ICollection<Receiver> receivers)
+        private async Task UpdateReceivers(ICollection<Receiver> receivers)
         {
             try
             {
@@ -28,18 +28,16 @@ namespace ChatApp.Services
                     x.ReceivedDate = DateTime.Now;
                 });
 
-                this.applicationDbContext.SaveChanges();
+                await this.applicationDbContext.SaveChangesAsync();
             }
             catch (Exception e)
             {
 
                 Console.WriteLine(e.Message);
             }
-
-            return Task.CompletedTask;
         }
 
-        private Task UpdateMessages(ICollection<Receiver> receivers)
+        private async Task UpdateMessages(ICollection<Receiver> receivers)
         {
             try
             {
@@ -56,14 +54,12 @@ namespace ChatApp.Services
                     }
                 });
 
-                this.applicationDbContext.SaveChanges();
+                await this.applicationDbContext.SaveChangesAsync();
             }
             catch (Exception e)
             {
                 Console.WriteLine(e.Message);
             }
-
-            return Task.CompletedTask;
         }
 
         public Task<string> Register(string userName, string id)
@@ -180,7 +176,7 @@ namespace ChatApp.Services
             return Task.CompletedTask;
         }
 
-        public async Task ReceiveMessages(string connectionId, ICollection<MessageModel> notReceivedMsgs)
+        public async Task ReceiveMessages(string connectionId)
         {
             try
             {
@@ -200,14 +196,12 @@ namespace ChatApp.Services
                     if (allReceivers.Any())
                     {
                         await this.UpdateReceivers(allReceivers);
-
                         await this.UpdateMessages(allReceivers);
                     }
                 }
             }
             catch (Exception e)
             {
-
                 Console.WriteLine(e.Message);
             }
         }

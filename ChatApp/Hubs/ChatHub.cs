@@ -37,7 +37,7 @@ namespace ChatApp.Hubs
 
             if (messages != null && messages.Any())
             {
-                await this.chatAppService.ReceiveMessages(connectionId, messages.Where(x => x.IsReceived == 0).ToList());
+                await this.chatAppService.ReceiveMessages(connectionId);
                 string id = await this.chatAppService.GetUserIdByConnectionId(connectionId);
                 var msgs = await this.chatAppService.GetAllMessages(id);
 

@@ -16,7 +16,7 @@ namespace ChatApp.Services.Interfaces
 
         Task RemoveUser(string connectionId);
 
-        Task ReceiveMessages(string connectionId, ICollection<MessageModel> notReceivedMsgs);
+        Task ReceiveMessages(string connectionId);
 
         Task<string> GetUserIdByConnectionId(string connectionId);
     }
